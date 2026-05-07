@@ -10,11 +10,11 @@ from typing import Optional
 
 import streamlit as st
 from dotenv import load_dotenv
+import markdown
 
 from utils.pdf_processor import PDFProcessor
 from utils.vector_store import VectorStoreManager
 from utils.chat_engine import ChatEngine
-from utils.exporter import PDFExporter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -103,6 +103,17 @@ st.markdown("""
     }
     .user-label { color: #1976d2; }
     .assistant-label { color: #2e7d32; }
+
+
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        .user-message { margin-left: 0.5rem; }
+        .assistant-message { margin-right: 0.5rem; }
+        .chat-message { padding: 0.8rem 1rem; font-size: 0.95rem; }
+        .main-header { padding: 1.5rem 1rem; margin-bottom: 1.5rem; }
+        .main-header h1 { font-size: 1.8rem !important; }
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -305,33 +316,24 @@ def main() -> None:
         chat_container = st.container()
         
         with chat_container:
-            for message in st.session_state.messages:
+            for idx, message in enumerate(st.session_state.messages):
                 if message["role"] == "user":
+                    user_html = markdown.markdown(message["content"])
                     st.markdown(
                         f'<div class="chat-message user-message">'
                         f'<span class="message-label user-label">You</span>'
-                        f'{message["content"]}</div>',
+                        f'{user_html}</div>',
                         unsafe_allow_html=True
                     )
                 else:
+                    # Convert markdown content to HTML for proper rendering inside our styled div
+                    html_content = markdown.markdown(message["content"], extensions=['tables'])
+                    
                     st.markdown(
                         f'<div class="chat-message assistant-message">'
                         f'<span class="message-label assistant-label">DocQuery</span>'
-                        f'{message["content"]}</div>',
+                        f'{html_content}</div>',
                         unsafe_allow_html=True
-                    )
-                    
-                    # Add download button for this response
-                    pdf_bytes = PDFExporter.generate_chat_pdf(
-                        st.session_state.messages[st.session_state.messages.index(message)-1]["content"],
-                        message["content"]
-                    )
-                    st.download_button(
-                        label="Download as PDF",
-                        data=pdf_bytes,
-                        file_name=f"DocQuery_Response_{int(time.time())}.pdf",
-                        mime="application/pdf",
-                        key=f"dl_{st.session_state.messages.index(message)}"
                     )
         
         # Question input

@@ -11,5 +11,4 @@ langchain-core
 langchain-classic
 sentence-transformers
 torchvision
-fpdf2
 markdown
